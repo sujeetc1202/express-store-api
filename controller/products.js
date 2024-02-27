@@ -1,7 +1,11 @@
 const Product = require("../models/products");
 
 const getAllProductsStatic = async (req, res) => {
-  const products = await Product.find({}).select("name price");
+  const products = await Product.find({})
+    .sort("-name, price")
+    .select("name price")
+    .limit(10) // used to limit the list size
+    .skip(5); // used to skip from the list
   // soting based on name and price if we add - before name then it will give in descending order
   res.status(200).json({ products, nbHits: products.length });
 };
