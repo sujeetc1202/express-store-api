@@ -1,7 +1,9 @@
 const Product = require("../models/products");
 
 const getAllProductsStatic = async (req, res) => {
-  const products = await Product.find({}).sort("name").select("name price");
+  const products = await Product.find({ price: { $gt: 20, $lt: 30 } })
+    .sort("price")
+    .select("name price");
   // .limit(10) // used to limit the list size
   // .skip(5); // used to skip from the list
   // soting based on name and price if we add - before name then it will give in descending order
@@ -10,7 +12,7 @@ const getAllProductsStatic = async (req, res) => {
 const getAllProducts = async (req, res) => {
   // to check query object is there or not
   //  in this way is query is present there in Schema it will send result if it is not there it will send all the data
-  const { featured, company, name, sort, fields } = req.query;
+  const { featured, company, name, sort, fields, numericFilters } = req.query;
   const queryObject = {};
 
   if (featured) {
@@ -22,6 +24,32 @@ const getAllProducts = async (req, res) => {
   }
   if (name) {
     queryObject.name = { $regex: name, $options: "i" };
+  }
+
+  // numericFilters
+
+  if (numericFilters) {
+    const operatorMap = {
+      ">": "$gt",
+      ">=": "$gte",
+      "=": "$eq",
+      "<": "$lt",
+      "<=": "$lte",
+    };
+
+    const regEx = /\b(>|>=|=|<|<=)\b/g;
+    let filters = numericFilters.replace(
+      regEx,
+      (match) => `-${operatorMap[match]}-`
+    );
+
+    const options = ["price", "rating"];
+    filters = filters.split(",").forEach((item) => {
+      const [field, operator, value] = item.split("-");
+      if (options.includes(field)) {
+        queryObject[field] = { [operator]: Number(value) };
+      }
+    });
   }
 
   let result = Product.find(queryObject);
